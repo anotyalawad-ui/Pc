@@ -51,7 +51,7 @@ jobs:
           Start-Process "C:\Program Files\Tailscale\tailscaled.exe" -WindowStyle Hidden
           Start-Sleep -Seconds 5
           & "C:\Program Files\Tailscale\tailscale.exe" up --authkey ${{ secrets.TAILSCALE_AUTHKEY }}
-          Start-Sleep -Seconds 10
+          Start-Sleep -Seconds 15
 
       - name: Get Tailscale IP
         run: |
@@ -64,7 +64,7 @@ jobs:
           Write-Host "Downloading Google Chrome..." -ForegroundColor Green
           $chromeUrl = "https://dl.google.com/chrome/install/latest/chrome_installer.exe"
           $installerPath = "$env:TEMP\chrome_installer.exe"
-          Invoke-WebRequest -Uri $chromeUrl -OutFile$installerPath
+          Invoke-WebRequest -Uri $chromeUrl -OutFile $installerPath
           Write-Host "Installing Google Chrome silently..." -ForegroundColor Green
           Start-Process -FilePath $installerPath -ArgumentList "/silent /install" -Wait
           Remove-Item $installerPath
@@ -75,7 +75,7 @@ jobs:
           Write-Host "Installing 7-Zip..." -ForegroundColor Green
           $7zUrl = "https://www.7-zip.org/a/7z2409-x64.exe"
           $installerPath = "$env:TEMP\7z-installer.exe"
-          Invoke-WebRequest -Uri $7zUrl -OutFile$installerPath
+          Invoke-WebRequest -Uri $7zUrl -OutFile $installerPath
           Write-Host "Installing 7-Zip silently..." -ForegroundColor Green
           Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
           Remove-Item $installerPath
@@ -101,7 +101,8 @@ jobs:
       - name: Keep Session Alive
         run: |
           $counter = 0
-          while ($true) {$counter++
+          while ($true) {
+            $counter++
             Write-Host "Session active - Heartbeat $counter ($(Get-Date))"
             Start-Sleep -Seconds 60
           }

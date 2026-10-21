@@ -20,21 +20,20 @@ jobs:
 
       - name: System Information
         run: |
-          Write-Host "`n=== DEPLOYMENT ===" -ForegroundColor Green
+          Write-Host "=== DEPLOYMENT ===" -ForegroundColor Green
           Write-Host "Instance Number: ${{ github.event.inputs.instance_number }}"
           Write-Host "Runner: $env:RUNNER_NAME" -ForegroundColor Yellow
           Write-Host "Workflow: $env:GITHUB_WORKFLOW" -ForegroundColor Yellow
-
-          Write-Host "`n=== SYSTEM SPECIFICATIONS ===" -ForegroundColor Green
+          Write-Host "=== SYSTEM SPECIFICATIONS ===" -ForegroundColor Green
           Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion
           Get-WmiObject -Class Win32_Processor | Select-Object Name, NumberOfCores
 
       - name: Enable RDP
         run: |
           Write-Host "Enabling Remote Desktop..." -ForegroundColor Green
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
 
       - name: Create User Account
         run: |
@@ -48,74 +47,69 @@ jobs:
       - name: Install and Start Tailscale
         run: |
           choco install tailscale -y
-          refreshenv
-          tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }}
-          Start-Sleep -Seconds 15
+          Start-Sleep -Seconds 10
+          Start-Process "C:\Program Files\Tailscale\tailscaled.exe" -WindowStyle Hidden
+          Start-Sleep -Seconds 5
+          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey ${{ secrets.TAILSCALE_AUTHKEY }}
+          Start-Sleep -Seconds 10
 
       - name: Get Tailscale IP
         run: |
-          $tsIP = (tailscale ip -4)
-          Write-Host "Tailscale IP: $tsIP" -ForegroundColor Green
-          echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
+          $tsIp = (tailscale ip -4)
+          Write-Host "Tailscale IP: $tsIp" -ForegroundColor Green
+          echo "TAILSCALE_IP=$tsIp" >> $env:GITHUB_ENV
 
       - name: Install Google Chrome (Direct)
         run: |
           Write-Host "Downloading Google Chrome..." -ForegroundColor Green
           $chromeUrl = "https://dl.google.com/chrome/install/latest/chrome_installer.exe"
           $installerPath = "$env:TEMP\chrome_installer.exe"
-          Invoke-WebRequest -Uri $chromeUrl -OutFile $installerPath
-          Write-Host "Installing Google Chrome silently..." -ForegroundColor Yellow
+          Invoke-WebRequest -Uri $chromeUrl -OutFile$installerPath
+          Write-Host "Installing Google Chrome silently..." -ForegroundColor Green
           Start-Process -FilePath $installerPath -ArgumentList "/silent /install" -Wait
-          Remove-Item $installerPath -Force
-          Write-Host "Google Chrome installed!" -ForegroundColor Green
+          Remove-Item $installerPath
+          Write-Host "Google Chrome installed successfully!" -ForegroundColor Green
 
       - name: Install 7-Zip (Direct)
         run: |
-          Write-Host "Downloading 7-Zip..." -ForegroundColor Green
-          $zipUrl = "https://www.7-zip.org/a/7z2409-x64.exe"
+          Write-Host "Installing 7-Zip..." -ForegroundColor Green
+          $7zUrl = "https://www.7-zip.org/a/7z2409-x64.exe"
           $installerPath = "$env:TEMP\7z-installer.exe"
-          Invoke-WebRequest -Uri $zipUrl -OutFile $installerPath
-          Write-Host "Installing 7-Zip silently..." -ForegroundColor Yellow
+          Invoke-WebRequest -Uri $7zUrl -OutFile$installerPath
+          Write-Host "Installing 7-Zip silently..." -ForegroundColor Green
           Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
-          Remove-Item $installerPath -Force
-          Write-Host "7-Zip installed!" -ForegroundColor Green
+          Remove-Item $installerPath
+          Write-Host "7-Zip installed successfully!" -ForegroundColor Green
 
       - name: Connection Details
         run: |
-          Write-Host "`n=== CONNECTION DETAILS (TAILSCALE) ===" -ForegroundColor Green
-          Write-Host "+---------------------------------------------------+"
-          Write-Host "|               ENIGMANO RDP ACCESS                 |"
-          Write-Host "+---------------------------------------------------+"
-          Write-Host "| Host: $env:TAILSCALE_IP                           |" -ForegroundColor Yellow
-          Write-Host "| Username: runneradmin                             |" -ForegroundColor Yellow
-          Write-Host "| Password: P@ssw0rd!                               |" -ForegroundColor Yellow
-          Write-Host "+---------------------------------------------------+"
-
-          Write-Host "`nConnection Instructions:" -ForegroundColor Green
+          Write-Host ""
+          Write-Host "=== CONNECTION DETAILS (TAILSCALE) ===" -ForegroundColor Green
+          Write-Host ""
+          Write-Host "ENIGMANO RDP ACCESS"
+          Write-Host "Host: $env:TAILSCALE_IP"
+          Write-Host "Username: runneradmin"
+          Write-Host "Password: P@ssw0rd!"
+          Write-Host ""
+          Write-Host "Connection Instructions:" -ForegroundColor Green
           Write-Host "1. Install Tailscale on your device (phone, PC, etc.)"
           Write-Host "2. Log in with the same Tailscale account"
           Write-Host "3. Open Remote Desktop app and enter the IP above"
           Write-Host "4. Use the provided credentials" -ForegroundColor Yellow
+          Write-Host ""
 
       - name: Keep Session Alive
         run: |
-          Write-Host "`n=== SESSION ACTIVE ===" -ForegroundColor Green
-          Write-Host "EnigMano RDP instance is now running!" -ForegroundColor Yellow
-          Write-Host "Instance will remain active for up to 6 hours."
-          Write-Host "Do not close this window to maintain the connection."
-
           $counter = 0
           while ($true) {$counter++
-            Write-Host "Session active - Heartbeat #$counter ($(Get-Date))"
-
-            $tsStatus = (tailscale status)
-            if ($tsStatus -match "active") {
-              Write-Host "Tailscale status: ACTIVE" -ForegroundColor Green
-            } else {
-              Write-Host "Tailscale status: ERROR - Restarting..." -ForegroundColor Red
-              tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }}
-            }
-
+            Write-Host "Session active - Heartbeat $counter ($(Get-Date))"
             Start-Sleep -Seconds 60
           }
+
+      - name: Post Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Complete Job
+        run: |
+          Write-Host "Job Completed Successfully." -ForegroundColor Green
           

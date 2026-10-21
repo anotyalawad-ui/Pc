@@ -50,7 +50,7 @@ jobs:
           Start-Sleep -Seconds 10
           Start-Process "C:\Program Files\Tailscale\tailscaled.exe" -WindowStyle Hidden
           Start-Sleep -Seconds 5
-          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey ${{ secrets.TAILSCALE_AUTHKEY }}
+          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey ${{ secrets.TAILSCALE_AUTH_KEY }}
           Start-Sleep -Seconds 15
 
       - name: Get Tailscale IP

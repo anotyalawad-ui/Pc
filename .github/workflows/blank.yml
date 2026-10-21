@@ -55,7 +55,7 @@ jobs:
 
       - name: Get Tailscale IP
         run: |
-          $tsIp = (tailscale ip -4)
+          $tsIp = (& "C:\Program Files\Tailscale\tailscale.exe" ip -4)
           Write-Host "Tailscale IP: $tsIp" -ForegroundColor Green
           echo "TAILSCALE_IP=$tsIp" >> $env:GITHUB_ENV
 

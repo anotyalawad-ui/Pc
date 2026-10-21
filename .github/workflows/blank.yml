@@ -45,26 +45,16 @@ jobs:
           Write-Host "Username: runneradmin" -ForegroundColor Yellow
           Write-Host "Password: P@ssw0rd!" -ForegroundColor Yellow
 
-      - name: Install Tailscale (Silent)
+      - name: Install and Start Tailscale
         run: |
-          Write-Host "Downloading Tailscale..." -ForegroundColor Green
-          $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe"
-          $installerPath = "$env:TEMP\tailscale.msi"
-          Invoke-WebRequest -Uri $tsUrl -OutFile $installerPath
-          Write-Host "Installing Tailscale silently..." -ForegroundColor Yellow
-          Start-Process msiexec.exe -ArgumentList "/i `"$installerPath`" /qn" -Wait
-          Remove-Item $installerPath -Force
-          Write-Host "Tailscale installed successfully!" -ForegroundColor Green
-
-      - name: Start Tailscale
-        run: |
-          Write-Host "Starting Tailscale..." -ForegroundColor Green
-          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey ${{ secrets.TAILSCALE_AUTHKEY }}
+          choco install tailscale -y
+          refreshenv
+          tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }}
           Start-Sleep -Seconds 15
 
       - name: Get Tailscale IP
         run: |
-          $tsIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+          $tsIP = (tailscale ip -4)
           Write-Host "Tailscale IP: $tsIP" -ForegroundColor Green
           echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
 
@@ -118,14 +108,14 @@ jobs:
           while ($true) {$counter++
             Write-Host "Session active - Heartbeat #$counter ($(Get-Date))"
 
-            $tsStatus = & "C:\Program Files\Tailscale\tailscale.exe" status
+            $tsStatus = (tailscale status)
             if ($tsStatus -match "active") {
               Write-Host "Tailscale status: ACTIVE" -ForegroundColor Green
             } else {
               Write-Host "Tailscale status: ERROR - Restarting..." -ForegroundColor Red
-              & "C:\Program Files\Tailscale\tailscale.exe" up --authkey ${{ secrets.TAILSCALE_AUTHKEY }}
+              tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }}
             }
-
 
             Start-Sleep -Seconds 60
           }
+          
